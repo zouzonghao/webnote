@@ -39,6 +39,11 @@ RUN mkdir -p notes && \
 # Create a non-root user to run the application
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
+# Copy the entrypoint script
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["entrypoint.sh"]
+
 
 # Expose the port
 EXPOSE 8080

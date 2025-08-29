@@ -9,6 +9,7 @@ services:
       - "8080:8080"
     volumes:
       - ./notes-data:/app/notes
+    
     environment:
       # 所有文件大小限值，默认10240000（10MB）
       - MAX_STORAGE_SIZE=10240000
