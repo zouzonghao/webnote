@@ -1,6 +1,10 @@
 # --- Build Stage ---
 FROM golang:1.23-alpine AS builder
 
+# Install minify
+RUN apk add --no-cache curl && \
+    curl -L https://github.com/tdewolff/minify/releases/latest/download/minify_linux_amd64.tar.gz | tar -xz -C /usr/local/bin --strip-components=1
+
 # Set the working directory
 WORKDIR /app
 
@@ -10,6 +14,11 @@ RUN go mod download
 
 # Copy all source code
 COPY . .
+
+# Minify static files
+RUN mkdir -p /app/static-min && \
+    minify -o /app/static-min/style.css static/style.css && \
+    minify -o /app/static-min/script.js static/script.js
 
 # Build the application
 # -ldflags="-w -s" reduces the binary size
@@ -27,7 +36,7 @@ COPY --from=builder /webnote /app/webnote
 
 # Copy static files and templates
 COPY index.html .
-COPY static ./static
+COPY --from=builder /app/static-min ./static
 
 # Create the notes storage directory
 RUN mkdir -p notes

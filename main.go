@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -420,7 +421,7 @@ func main() {
 	}
 
 	log.Printf("Listening on :%s...", port)
-	err := http.ListenAndServe(":"+port, r)
+	err := http.ListenAndServe(":"+port, handlers.CompressHandler(r))
 	if err != nil {
 		log.Fatal(err)
 	}
