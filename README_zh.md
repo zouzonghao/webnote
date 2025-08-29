@@ -17,6 +17,47 @@
 3.  笔记会自动保存。
 4.  与他人分享该 URL。
 
+## API 用法
+
+您可以使用 `curl` 或其他 HTTP 客户端通过编程方式与 WebNote 交互。
+
+### 查看笔记
+
+-   **URL**: `GET /{note_path}`
+-   **示例**: `curl http://127.0.0.1:8080/mynote?raw=true`
+
+查看raw文本内容：
+
+-   **URL**: `GET /{note_path}?raw=true`
+-   **Example**: `curl http://127.0.0.1:8080/mynote?raw=true`
+
+### 保存或更新笔记
+
+-   **URL**: `POST /save/{note_path}`
+-   **请求体**: 您的笔记内容。
+
+**示例:**
+
+-   从原始文本保存：
+    ```bash
+    curl -X POST -d "这是我的笔记。" http://127.0.0.1:8080/save/mynote
+    ```
+-   从文件保存：
+    ```bash
+    curl -X POST --data-binary "@path/to/your/file.txt" http://127.0.0.1:8080/save/mynote
+    ```
+
+### 删除笔记
+
+要删除一个笔记，向其保存 URL 发送一个空的 POST 请求。
+
+-   **URL**: `POST /save/{note_path}`
+-   **请求体**: (空)
+-   **示例**:
+    ```bash
+    curl -X POST -d "" http://127.0.0.1:8080/save/mynote
+    ```
+
 ## 开发
 
 在本地运行此项目：

@@ -314,41 +314,60 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	path := vars["path"]
 
-	// Check content length against the limit
-	if r.ContentLength > maxContentSize {
-		http.Error(w, "Content exceeds the maximum allowed size.", http.StatusRequestEntityTooLarge)
-		return
+	var content string
+	contentType := r.Header.Get("Content-Type")
+
+	// If it's a form submission, handle it carefully
+	if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Failed to parse form.", http.StatusInternalServerError)
+			return
+		}
+		// Check for the "content" key, which is used by the browser form.
+		if _, ok := r.PostForm["content"]; ok {
+			content = r.FormValue("content")
+		} else if len(r.PostForm) > 0 {
+			// If "content" key is not present, but there is form data,
+			// it's likely a curl request like `curl -d "some text"`.
+			// In this case, the raw query string is the content.
+			content = r.PostForm.Encode()
+			// The Encode method might add an extra '=' if the value is empty, remove it.
+			content = strings.TrimSuffix(content, "=")
+		}
+	} else {
+		// Otherwise, treat it as raw text content and read the body directly
+		defer r.Body.Close()
+		limitedReader := &io.LimitedReader{R: r.Body, N: maxContentSize + 1}
+		bodyBytes, err := io.ReadAll(limitedReader)
+		if err != nil {
+			http.Error(w, "Failed to read request body.", http.StatusInternalServerError)
+			return
+		}
+		if limitedReader.N <= 0 {
+			http.Error(w, "Content exceeds the maximum allowed size.", http.StatusRequestEntityTooLarge)
+			return
+		}
+		content = string(bodyBytes)
 	}
 
-	defer r.Body.Close()
-
-	// Read the entire body into memory to inspect its content.
-	// Use a LimitReader to prevent reading excessively large bodies.
-	limitedReader := &io.LimitedReader{R: r.Body, N: maxContentSize + 1}
-	content, err := io.ReadAll(limitedReader)
-	if err != nil {
-		http.Error(w, "Failed to read request body.", http.StatusInternalServerError)
-		return
-	}
-
-	// Check if the client sent more data than the limit.
-	if limitedReader.N <= 0 {
+	if int64(len(content)) > maxContentSize {
 		http.Error(w, "Content exceeds the maximum allowed size.", http.StatusRequestEntityTooLarge)
 		return
 	}
 
 	// If the content, after trimming whitespace, is empty, treat it as a deletion.
-	if len(strings.TrimSpace(string(content))) == 0 {
-		// Call saveNote with zero length to trigger deletion.
+	if len(strings.TrimSpace(content)) == 0 {
 		if err := saveNote(path, bytes.NewReader(nil), 0); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Note deleted.\n"))
 		return
 	}
 
-	// Otherwise, save the original content.
-	err = saveNote(path, bytes.NewReader(content), int64(len(content)))
+	// Otherwise, save the content.
+	err := saveNote(path, strings.NewReader(content), int64(len(content)))
 	if err != nil {
 		if err == ErrStorageTooLarge {
 			http.Error(w, "Storage is overloaded.", http.StatusServiceUnavailable)
@@ -359,6 +378,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Note saved.\n"))
 }
 
 func main() {
