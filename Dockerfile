@@ -29,21 +29,8 @@ COPY --from=builder /webnote /app/webnote
 COPY index.html .
 COPY static ./static
 
-# Create the notes storage directory and set permissions
-# Using a non-root user is a security best practice.
-# The user ID 1001 is arbitrary but common for non-root users.
-RUN mkdir -p notes && \
-    chown -R 1001:1001 notes && \
-    chmod -R 755 notes
-
-# Create a non-root user to run the application
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-# Copy the entrypoint script
-COPY entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["entrypoint.sh"]
-
-USER appuser
+# Create the notes storage directory
+RUN mkdir -p notes
 
 
 # Expose the port
