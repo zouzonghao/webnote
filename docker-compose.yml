@@ -16,3 +16,6 @@ services:
       - MAX_STORAGE_SIZE=10240000
       # 单个文件大小限值，默认102400（100KB）
       - MAX_CONTENT_SIZE=102400  
+
+      # 历史重置小时阈值，默认72
+      - HISTORY_RESET_HOURS=72

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -27,20 +26,41 @@ func main() {
 		}
 	}
 
+	maxContentSize := int64(100 * 1024) // 100KB
+	if maxSizeStr := os.Getenv("MAX_CONTENT_SIZE"); maxSizeStr != "" {
+		if size, err := strconv.ParseInt(maxSizeStr, 10, 64); err == nil {
+			maxContentSize = size
+		}
+	}
+
+	historyResetHours := 72 // Default to 72 hours
+	if hoursStr := os.Getenv("HISTORY_RESET_HOURS"); hoursStr != "" {
+		if hours, err := strconv.Atoi(hoursStr); err == nil {
+			historyResetHours = hours
+		}
+	}
+
 	defaultPort := "8080"
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
-	rand.Seed(time.Now().UnixNano())
-
 	// Initialization
-	storage.InitStorage(maxStorageSize)
+	storage.InitStorage(maxStorageSize, historyResetHours)
 	hub := websocket.NewHub()
 	go hub.Run()
 
-	srv := server.NewServer(hub)
+	// Start periodic history pruning
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			storage.PruneHistory()
+		}
+	}()
+
+	srv := server.NewServer(hub, maxContentSize)
 
 	httpServer := &http.Server{
 		Addr:    ":" + port,

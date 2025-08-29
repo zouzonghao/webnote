@@ -1,0 +1,17 @@
+{
+  "name": "webnote",
+  "version": "1.0.0",
+  "description": "A simple, fast, and ephemeral note-taking service.",
+  "scripts": {
+    "minify:js": "terser static/script.js -o static/script.min.js -c -m",
+    "minify:css": "css-minify -f static/style.css -o static/",
+    "minify": "npm run minify:js && npm run minify:css"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "css-minify": "^2.0.0",
+    "terser": "^5.31.0"
+  }
+}

@@ -45,8 +45,7 @@ func (s *Server) noteHandler() http.HandlerFunc {
 			return
 		}
 
-		// This maxContentSize check should be in a config, but for now, we hardcode it.
-		if size > 100*1024 {
+		if size > s.maxContentSize {
 			http.Error(w, "Note is too large to display.", http.StatusRequestEntityTooLarge)
 			return
 		}
@@ -80,6 +79,12 @@ func (s *Server) saveHandler() http.HandlerFunc {
 			return
 		}
 		content := r.FormValue("content")
+
+		// Add check for content size before saving
+		if int64(len(content)) > s.maxContentSize {
+			http.Error(w, "Note is too large to save. Maximum size is "+strconv.FormatInt(s.maxContentSize/1024, 10)+"KB.", http.StatusRequestEntityTooLarge)
+			return
+		}
 
 		var contentLength int64
 		if len(strings.TrimSpace(content)) == 0 {

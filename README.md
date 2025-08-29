@@ -1,120 +1,118 @@
-# WebNote
+# 📝 WebNote
 
 [简体中文](README_zh.md)
 
-A simple, fast, and ephemeral note-taking service. Share notes easily with a URL.
+A blazingly fast, ephemeral, Git-powered note-taking service. Share notes and ideas with just a URL.
 
-## Features
+---
 
-- **Simple Interface**: A clean and intuitive UI for writing and reading notes.
-- **Ephemeral Storage**: Notes are stored on the server, but the total storage is limited. Old notes may be cleared.
-- **URL-based Sharing**: Every note gets a unique, randomly generated URL for easy sharing.
-- **Rate Limiting**: Protects the service from abuse.
-- **Raw Content Access**: Access the raw text of any note via `?raw` query parameter or by using clients like `curl` or `Wget`.
+## ✨ Core Features
 
-## Usage
+-   ⚡️ **Blazing Fast & Simple:** No database, no complex setup. Just pure performance with Go.
+-   🔗 **Share via URL:** Every note is a unique, shareable link, generated on the fly.
+-   ✍️ **Real-time Sync:** Keep your notes synced across multiple devices or collaborate with others seamlessly using WebSockets.
+-   🕰️ **Git-Powered History:** Every save is a `git commit`! Browse your note's history with ease, just like your code.
+-   🗑️ **Ephemeral by Design:** Old, inactive note histories are automatically pruned to keep storage lean and focused on recent activity.
+-    RAW **Raw Text Access:** `curl` or `wget` your notes directly from the terminal for ultimate scripting power.
 
-1.  Navigate to the root URL. You will be redirected to a new, empty note page.
-2.  Write your note in the text area.
-3.  The note is saved automatically.
-4.  Share the URL with others.
+---
 
-## API Usage
+## 🚀 Getting Started: Deployment
 
-You can interact with WebNote programmatically using `curl` or other HTTP clients.
+The quickest and recommended way to get WebNote running is with Docker.
 
-### View a Note
+### Method 1: Docker Compose (Recommended)
 
--   **URL**: `GET /{note_path}`
--   **Example**: `curl http://127.0.0.1:8080/mynote`
+This method uses the pre-built image from Docker Hub, which is perfect for most users.
 
-To get the raw text content:
-
--   **URL**: `GET /{note_path}?raw=true`
--   **Example**: `curl http://127.0.0.1:8080/mynote?raw=true`
-
-### Save or Update a Note
-
--   **URL**: `POST /save/{note_path}`
--   **Body**: The content of your note.
-
-**Examples:**
-
--   Save from raw text:
-    ```bash
-    curl -X POST -d "This is my note." http://127.0.0.1:8080/save/mynote
-    ```
--   Save from a file:
-    ```bash
-    curl -X POST --data-binary "@path/to/your/file.txt" http://127.0.0.1:8080/save/mynote
-    ```
-
-### Delete a Note
-
-To delete a note, send an empty POST request to its save URL.
-
--   **URL**: `POST /save/{note_path}`
--   **Body**: (empty)
--   **Example**:
-    ```bash
-    curl -X POST -d "" http://127.0.0.1:8080/save/mynote
-    ```
-
-## Development
-
-To run this project locally:
-
-```bash
-go run main.go
-```
-
-The server will start on port `8080` by default.
-
-## Deployment
-
-### With Docker
-
-1.  **Build the image from source:**
-    ```bash
-    docker build -t webnote .
-    ```
-
-2.  **Run the container:**
-    This command will store note data in the `notes-data` directory in your current working directory.
-    ```bash
-    docker run -d -p 8080:8080 -v $(pwd)/notes-data:/app/notes --name webnote_app webnote
-    ```
-
-### With Docker Compose
-
-The provided `docker-compose.yml` uses a pre-built image from Docker Hub.
-
-1.  **Run with the pre-built image:**
+1.  Ensure you have Docker and Docker Compose installed.
+2.  Save the `docker-compose.yml` file from this repository.
+3.  Run the following command in the same directory:
     ```bash
     docker-compose up -d
     ```
+    Your WebNote instance is now running at `http://localhost:8080`. Note data will be stored in a `./notes-data` directory.
 
-2.  **Build and run from source:**
-    If you want to build the image from the local `Dockerfile`, you can modify the `docker-compose.yml` to include a `build` instruction:
+### Method 2: Build from Source
+
+If you prefer to build the image yourself:
+
+1.  **With Docker:**
+    ```bash
+    # 1. Build the image
+    docker build -t webnote .
+
+    # 2. Run the container
+    docker run -d -p 8080:8080 -v $(pwd)/notes-data:/app/notes --name webnote_app webnote
+    ```
+
+2.  **With Docker Compose:**
+    To build from source using Docker Compose, you need to add one line to the `docker-compose.yml` file:
     ```yaml
-    version: '3.8'
-
     services:
       webnote:
-        build: . # Add this line
-        image: webnote # Optional: name the image
-        restart: unless-stopped
-        container_name: webnote_app
-        ports:
-          - "8080:8080"
-        volumes:
-          - ./notes-data:/app/notes
-        user: root
-        environment:
-          - MAX_STORAGE_SIZE=10240000
-          - MAX_CONTENT_SIZE=102400
+        build: . # <-- Add this line
+        image: sanqi37/webnote:latest
+        # ... rest of the file
     ```
-    Then run:
+    Then, run the build command:
     ```bash
     docker-compose up -d --build
     ```
+
+---
+
+## 👩‍💻 Development
+
+Want to contribute or run the project locally without Docker?
+
+1.  **Prerequisites:**
+    -   Go (version 1.20+)
+    -   Node.js & npm (for frontend asset minification)
+
+2.  **Run the Backend:**
+    ```bash
+    go run main.go
+    ```
+    The server will start on `http://localhost:8080`.
+
+3.  **Frontend Assets:**
+    If you modify `static/script.js` or `static/style.css`, you need to minify them. A helper script is provided for convenience.
+    ```bash
+    # Make the script executable (only needs to be done once)
+    chmod +x minify.sh
+
+    # Run the script to install dependencies and minify files
+    ./minify.sh
+    ```
+
+---
+
+## ⚙️ Configuration
+
+WebNote is configured via environment variables.
+
+| Variable              | Description                                                  | Default        |
+| --------------------- | ------------------------------------------------------------ | -------------- |
+| `MAX_STORAGE_SIZE`    | The total size limit for all notes in bytes.                 | `10240000` (10MB) |
+| `MAX_CONTENT_SIZE`    | The size limit for a single note in bytes.                   | `102400` (100KB) |
+| `HISTORY_RESET_HOURS` | The inactivity threshold in hours to reset a note's history. | `72`           |
+| `PORT`                | The port the server will listen on.                          | `8080`         |
+
+---
+
+## 🔌 API Usage
+
+Interact with WebNote programmatically.
+
+-   **View a Note (Raw):**
+    ```bash
+    curl http://localhost:8080/your-note?raw=true
+    ```
+-   **Save/Update a Note:**
+    ```bash
+    curl -X POST -d "Hello, this is my note." http://localhost:8080/save/your-note
+    ```
+-   **Delete a Note:**
+    ```bash
+    curl -X POST -d "" http://localhost:8080/save/your-note

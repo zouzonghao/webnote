@@ -26,7 +26,7 @@ WORKDIR /app
 COPY --from=builder /webnote /app/webnote
 
 # Copy static files and templates
-COPY index.html .
+COPY index.html history.html .
 COPY static ./static
 
 # Use minified assets in production

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - {{.Path}} ({{.CurrentVersion}})</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .readonly-banner {
+            padding: 5px;
+            background-color: #ffc;
+            border-bottom: 1px solid #ccc;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0; /* Prevent banner from shrinking */
+        }
+        .readonly-banner a {
+            margin: 0 10px;
+        }
+        #readonly-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            padding: 20px;
+            box-sizing: border-box;
+            border: 1px #ddd solid;
+            font-size: 16px;
+            line-height: 1.5;
+            background: #fff;
+            color: #000;
+            flex-grow: 1; /* Allow content to fill remaining space */
+            overflow: auto; /* Add scrollbar only if content overflows */
+            margin: 20px;
+            border-radius: 0; /* Override any default */
+        }
+        @media (prefers-color-scheme: dark) {
+            #readonly-content {
+                background: #282923;
+                color: #f8f8f2;
+                border: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="readonly-banner">
+        <span>
+            {{if .PrevVersion}}
+                <a href="/{{.Path}}/{{.PrevVersion}}">&laquo; Newer</a>
+            {{end}}
+        </span>
+        <span>
+            Read-only history: Version {{.CurrentVersion}} of {{.TotalVersions | add -1 }}. 
+            <a href="/{{.Path}}">Go to current</a>
+        </span>
+        <span>
+            {{if .NextVersion}}
+                <a href="/{{.Path}}/{{.NextVersion}}">Older &raquo;</a>
+            {{end}}
+        </span>
+    </div>
+    <pre id="readonly-content">{{.Content}}</pre>
+</body>
+</html>
