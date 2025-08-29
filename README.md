@@ -69,3 +69,52 @@ go run main.go
 ```
 
 The server will start on port `8080` by default.
+
+## Deployment
+
+### With Docker
+
+1.  **Build the image from source:**
+    ```bash
+    docker build -t webnote .
+    ```
+
+2.  **Run the container:**
+    This command will store note data in the `notes-data` directory in your current working directory.
+    ```bash
+    docker run -d -p 8080:8080 -v $(pwd)/notes-data:/app/notes --name webnote_app webnote
+    ```
+
+### With Docker Compose
+
+The provided `docker-compose.yml` uses a pre-built image from Docker Hub.
+
+1.  **Run with the pre-built image:**
+    ```bash
+    docker-compose up -d
+    ```
+
+2.  **Build and run from source:**
+    If you want to build the image from the local `Dockerfile`, you can modify the `docker-compose.yml` to include a `build` instruction:
+    ```yaml
+    version: '3.8'
+
+    services:
+      webnote:
+        build: . # Add this line
+        image: webnote # Optional: name the image
+        restart: unless-stopped
+        container_name: webnote_app
+        ports:
+          - "8080:8080"
+        volumes:
+          - ./notes-data:/app/notes
+        user: root
+        environment:
+          - MAX_STORAGE_SIZE=10240000
+          - MAX_CONTENT_SIZE=102400
+    ```
+    Then run:
+    ```bash
+    docker-compose up -d --build
+    ```

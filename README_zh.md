@@ -67,3 +67,52 @@ go run main.go
 ```
 
 默认情况下，服务器将在 `8080` 端口上启动。
+
+## 部署
+
+### 使用 Docker
+
+1.  **从源代码构建镜像:**
+    ```bash
+    docker build -t webnote .
+    ```
+
+2.  **运行容器:**
+    此命令会将笔记数据存储在当前工作目录下的 `notes-data` 目录中。
+    ```bash
+    docker run -d -p 8080:8080 -v $(pwd)/notes-data:/app/notes --name webnote_app webnote
+    ```
+
+### 使用 Docker Compose
+
+项目提供的 `docker-compose.yml` 文件使用的是 Docker Hub 上的预构建镜像。
+
+1.  **使用预构建镜像运行:**
+    ```bash
+    docker-compose up -d
+    ```
+
+2.  **从源代码构建并运行:**
+    如果您想从本地的 `Dockerfile` 构建镜像，可以修改 `docker-compose.yml` 文件，添加 `build` 指令：
+    ```yaml
+    version: '3.8'
+
+    services:
+      webnote:
+        build: . # 添加此行
+        image: webnote # 可选：为镜像命名
+        restart: unless-stopped
+        container_name: webnote_app
+        ports:
+          - "8080:8080"
+        volumes:
+          - ./notes-data:/app/notes
+        user: root
+        environment:
+          - MAX_STORAGE_SIZE=10240000
+          - MAX_CONTENT_SIZE=102400
+    ```
+    然后运行：
+    ```bash
+    docker-compose up -d --build
+    ```
