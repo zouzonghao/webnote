@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"html/template"
 	"io"
@@ -255,12 +256,25 @@ func noteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// If the note file doesn't exist, render the page with empty content
+	// without creating a file on disk.
 	if file == nil {
-		http.NotFound(w, r)
+		data := struct {
+			Path    string
+			Content string
+		}{
+			Path:    path,
+			Content: "",
+		}
+		if err := templates.ExecuteTemplate(w, "index.html", data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 	defer file.Close()
 
+	// If the file exists, proceed to show its content.
 	userAgent := r.Header.Get("User-Agent")
 	if _, raw := r.URL.Query()["raw"]; raw || strings.HasPrefix(userAgent, "curl") || strings.HasPrefix(userAgent, "Wget") {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -269,9 +283,7 @@ func noteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For HTML template, we must read the content into memory.
-	// This is a trade-off for template rendering.
-	if size > maxContentSize { // Safety check
+	if size > maxContentSize {
 		http.Error(w, "Note is too large to display.", http.StatusRequestEntityTooLarge)
 		return
 	}
@@ -308,11 +320,35 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use a LimitReader to protect against clients sending more data than declared.
-	limitedReader := &io.LimitedReader{R: r.Body, N: maxContentSize + 1}
 	defer r.Body.Close()
 
-	err := saveNote(path, limitedReader, r.ContentLength)
+	// Read the entire body into memory to inspect its content.
+	// Use a LimitReader to prevent reading excessively large bodies.
+	limitedReader := &io.LimitedReader{R: r.Body, N: maxContentSize + 1}
+	content, err := io.ReadAll(limitedReader)
+	if err != nil {
+		http.Error(w, "Failed to read request body.", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the client sent more data than the limit.
+	if limitedReader.N <= 0 {
+		http.Error(w, "Content exceeds the maximum allowed size.", http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	// If the content, after trimming whitespace, is empty, treat it as a deletion.
+	if len(strings.TrimSpace(string(content))) == 0 {
+		// Call saveNote with zero length to trigger deletion.
+		if err := saveNote(path, bytes.NewReader(nil), 0); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Otherwise, save the original content.
+	err = saveNote(path, bytes.NewReader(content), int64(len(content)))
 	if err != nil {
 		if err == ErrStorageTooLarge {
 			http.Error(w, "Storage is overloaded.", http.StatusServiceUnavailable)
@@ -322,15 +358,10 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the reader was read past the limit
-	if limitedReader.N <= 0 {
-		http.Error(w, "Content exceeds the maximum allowed size.", http.StatusRequestEntityTooLarge)
-		// Note: At this point, a partial file might have been saved. A more robust
-		// implementation would handle cleaning this up.
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
+}
+
+func main() {
 	// 从环境变量加载配置
 	if maxSizeStr := os.Getenv("MAX_STORAGE_SIZE"); maxSizeStr != "" {
 		if size, err := strconv.ParseInt(maxSizeStr, 10, 64); err == nil {
@@ -348,9 +379,9 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Warning: could not parse MAX_CONTENT_SIZE env var: %v", err)
 		}
 	}
-}
 
-func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	initStorage()
 	templates = template.Must(template.ParseFiles("index.html"))
 	go cleanupVisitors()
