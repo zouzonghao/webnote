@@ -96,7 +96,7 @@ WebNote is configured via environment variables.
 | --------------------- | ------------------------------------------------------------ | -------------- |
 | `MAX_STORAGE_SIZE`    | The total size limit for all notes in bytes.                 | `10240000` (10MB) |
 | `MAX_CONTENT_SIZE`    | The size limit for a single note in bytes.                   | `102400` (100KB) |
-| `HISTORY_RESET_HOURS` | The inactivity threshold in hours to reset a note's history. | `72`           |
+| `HISTORY_RESET_HOURS` | The inactivity threshold in hours to reset a note's history. Set to 0 to disable periodic deletion. | `72`           |
 | `PORT`                | The port the server will listen on.                          | `8080`         |
 
 ---

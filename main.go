@@ -52,13 +52,15 @@ func main() {
 	go hub.Run()
 
 	// Start periodic history pruning
-	go func() {
-		ticker := time.NewTicker(24 * time.Hour)
-		defer ticker.Stop()
-		for range ticker.C {
-			storage.PruneHistory()
-		}
-	}()
+	if historyResetHours > 0 {
+		go func() {
+			ticker := time.NewTicker(24 * time.Hour)
+			defer ticker.Stop()
+			for range ticker.C {
+				storage.PruneHistory()
+			}
+		}()
+	}
 
 	srv := server.NewServer(hub, maxContentSize)
 
