@@ -40,10 +40,10 @@ jobs:
 
             # 规则 1: 处理生产标签 (以 v 开头)
             # 例如: git tag v2.1.0 -> docker tags: 2.1.0, 2.1, 2, latest
-            type=semver,pattern={{version}},prefix=v,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-            type=semver,pattern={{major}}.{{minor}},prefix=v,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-            type=semver,pattern={{major}},prefix=v,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }} 
+            type=semver,pattern={{version}},prefix=v,enable=${{ startsWith(github.ref, 'refs/tags/v') }},priority=200
+            type=semver,pattern={{major}}.{{minor}},prefix=v,enable=${{ startsWith(github.ref, 'refs/tags/v') }},priority=200
+            type=semver,pattern={{major}},prefix=v,enable=${{ startsWith(github.ref, 'refs/tags/v') }},priority=200
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }},priority=100 
 
             # 规则 2: 处理测试标签 (以 b 开头)
             # 例如: git tag b2.1.0 -> docker tag: 2.1.0-beta
