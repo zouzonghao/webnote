@@ -48,7 +48,7 @@ jobs:
             # 规则 2: 处理测试标签 (以 b 开头)
             # 例如: git tag b2.1.0 -> docker tag: 2.1.0-beta
             # 我们特意添加 '-beta' 后缀，让 Docker 标签更具可读性
-            type=semver,pattern={{version}}-beta,prefix=b,enable=${{ startsWith(github.ref, 'refs/tags/b') }}
+            type=match,pattern=b(.*),group=1,suffix=-beta,enable=${{ startsWith(github.ref, 'refs/tags/b') }}
             # 规则 3: 为最新的测试版本创建一个 'beta' 标签
             type=raw,value=beta,enable=${{ startsWith(github.ref, 'refs/tags/b') }}
 
